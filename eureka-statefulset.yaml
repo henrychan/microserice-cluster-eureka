@@ -1,0 +1,56 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: eureka
+spec:
+  selector:
+    matchLabels:
+      app: eureka
+  serviceName: "eureka-service-internal"
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: eureka
+        owner: henrychen
+        tier: backend
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - env:
+            - name: MY_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE # 传入当前命名空间
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: MY_IN_SERVICE_NAME # 因为pod 通过域名互相访问，需要使用headless 服务名称
+              value: eureka-service-internal
+            - name: EUREKA_APPLICATION_NAME
+              value: "eureka"
+            - name: EUREKA_REPLICAS
+              value: "2"
+            - name: SELF_PRESERVATION
+              value: "false" #自我保护模式,当其注册表里服务因为网络或其他原因出现故障而关停时，Eureka不会剔除服务注册，而是等待其修复
+          image: itmuch/microservice-discovery-eureka:0.0.1-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          name: eureka-container
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+          ports:
+            - containerPort: 8761
+              protocol: TCP
+
+
